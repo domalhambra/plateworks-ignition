@@ -47,7 +47,7 @@ Netlify's Sites page for a one-off.
 Push to `main`; Netlify redeploys automatically.
 
 When you change any cached asset, bump the cache name in `sw.js`
-(`badwater-ignition-v8` → `-v9`; bump the number, never reword the prefix) so
+(`badwater-ignition-v9` → `-v10`; bump the number, never reword the prefix) so
 returning devices fetch the new version.
 
 ## Notes / limitations
