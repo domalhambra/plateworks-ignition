@@ -228,21 +228,33 @@ already-frozen text; it recomputes nothing.
 ---
 
 ## 7. Open for Claude Design
-1. **App icon** — the Badwater pool-against-salt motif; `AppIcon.appiconset` is a
-   placeholder. Consider a teal droplet/basin over a warm horizon.
-2. **Severity ramp tuning** on real OLED and in sunlight.
-3. **Motion** — subtle: a value tick on change, a severity-color cross-fade.
+1. **Severity ramp tuning** on real OLED and in sunlight.
+2. **Motion** — subtle: a value tick on change, a severity-color cross-fade.
    Keep it minimal; respect Reduce Motion.
-4. **"Book mode" — the Ignition tab's next feature.** Render the actual IRPG
+3. **"Book mode" — the Ignition tab's next feature.** Render the actual IRPG
    table with the resolved cell highlighted; the app *becomes* the pocket-guide
    page. Promoted from v2 candidate by `docs/UX_TWO_TAB.md` §10: on a two-tab
    app Ignition's whole job is trustworthy estimation, this is the chain
    strip's show-your-work made spatial, and it makes the cell-edge sensitivity
    marker self-evident because the neighbouring cell is right there. Needs its
    own spec (pagination, cell-highlight accessibility, landscape).
-5. **Apple Watch app / widget (v2)** — glanceable PIG on the wrist or home
+4. **Apple Watch app / widget (v2)** — glanceable PIG on the wrist or home
    screen during a weather obs. (Distinct from the shipped **Obs tab**,
    §4.2, which is the phone's shift observation log.)
+
+## 7.1 App icon (shipped)
+One flame — a single calligraphic silhouette, no layered pieces — filled with
+a gradient that runs bottom-to-top through the actual severity ramp
+(`SeverityVeryLow` green at the base to `SeverityExtreme` red at the tip), on
+a radial `PoolTeal` ground (bright teal center fading to a deep teal-black
+edge — never pure black, so it reads on both light and dark home screens).
+The icon renders the app's own color language rather than generic fire
+clip art. Went through several rounds — a layered outer/inner/core flame read
+as "objects stacked to approximate a flame"; a compass-drawn arc version
+collapsed into a leaf silhouette — before landing on the single-path form.
+Source: `web/icon.svg`, rasterized into `web/icon-512.png` +
+`web/apple-touch-icon.png` and into `AppIcon.appiconset` for the iOS/macOS
+app and the watchOS app (both were placeholders before this).
 
 ---
 

@@ -59,7 +59,7 @@ The `web/` app has **no build step** and no dependencies — it's static files s
 ## Deploy & hosting
 
 - **Continuous deploy:** the web app is a **git-connected Netlify site** (`plateworks-ignition`). Pushing to `main` auto-deploys `web/` (base directory `web/`, no build command). There is no manual deploy step.
-- **When you change any cached web asset, bump `CACHE` in `web/sw.js`** (currently `badwater-ignition-v8` → `-v9`, …) or field devices keep serving the old app offline.
+- **When you change any cached web asset, bump `CACHE` in `web/sw.js`** (currently `badwater-ignition-v9` → `-v10`, …) or field devices keep serving the old app offline.
 - **Domain:** `ignition.plateworks.org` (canonical). `obs.plateworks.org` is a domain alias that **301-redirects** (rule in `web/netlify.toml`). Proxied CNAMEs → `plateworks-ignition.netlify.app` in the `plateworks.org` Cloudflare zone.
 - **Legacy hosts** `ignition.badwater.guide` / `obs.badwater.guide` 301 to the canonical host via a Cloudflare redirect rule in the `badwater.guide` zone (cutover 2026-07-28, migration Phase 2; the 48h tombstone dwell was waived — the app was pre-launch with no installed users). Their DNS points at a proxied dummy (`A 192.0.2.1`); the old `badwater-ignition` Netlify site is deleted. The `tombstone` branch remains in the repo as the record of the cutover; it serves nothing and must never be merged.
 - GitHub: `domalhambra/plateworks-ignition` (renamed from `badwater-ignition`; old URLs redirect, but anything comparing `github.repository` by string — workflow repo guards — must use the new name).
