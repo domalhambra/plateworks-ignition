@@ -5,13 +5,14 @@
 //
 // CACHE is a version string, not brand copy — bump the number on any cached-asset
 // change; never reword the prefix (see CLAUDE.md).
-const CACHE = "badwater-ignition-v9";
+const CACHE = "badwater-ignition-v10";
 const ASSETS = [
   "/",
   "/index.html",
   "/engine.js",
   "/app.js",
   "/manifest.webmanifest",
+  "/favicon.svg",
   "/icon.svg",
   "/icon-512.png",
   "/apple-touch-icon.png",
