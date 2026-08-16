@@ -8,5 +8,12 @@
 //
 //   DEVELOPMENT_TEAM = <your team ID>
 //
+// Leave it unscoped: an [sdk=...]-conditional team breaks
+// -allowProvisioningUpdates' App Group registration for the widget, the same
+// failure mode as a command-line DEVELOPMENT_TEAM= override (see CLAUDE.md).
+// On a free Personal Team the unscoped value makes a *signed* macOS build
+// impossible (no macOS App Groups there) — build macOS with
+// CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO, exactly as CI does.
+//
 // Automatic signing does the rest: certificate, App IDs, App Groups, profiles.
 #include? "signing.local.xcconfig"

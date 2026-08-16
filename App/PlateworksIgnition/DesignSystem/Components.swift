@@ -338,6 +338,19 @@ struct PIGSummaryBar: View {
     }
 }
 
+extension View {
+    /// `.toolbar(.hidden, for: .navigationBar)`, but compilable everywhere:
+    /// `ToolbarPlacement.navigationBar` is not in the macOS SDK — there is no
+    /// navigation bar to hide there — so this is a no-op on macOS.
+    @ViewBuilder func navigationBarHiddenOnIOS() -> some View {
+        #if os(macOS)
+        self
+        #else
+        self.toolbar(.hidden, for: .navigationBar)
+        #endif
+    }
+}
+
 /// The pinned bottom "Start an Observation" bar, shared by both tabs so the
 /// entry point to the capture flow looks identical wherever the operator is.
 /// On **Obs** it opens the capture sheet directly and is disabled while the

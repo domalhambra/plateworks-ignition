@@ -147,7 +147,7 @@ struct WatchView: View {
         .background(PlateworksColor.background)
         // Hidden for the same reason as IgnitionView's: no push navigation,
         // and the tab bar + in-content header already name the screen twice.
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarHiddenOnIOS()
         // Suspends with the view: leaving the tab cancels the loop, and a
         // suspended app doesn't run it at all.
         .task {

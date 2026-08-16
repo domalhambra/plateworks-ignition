@@ -47,7 +47,7 @@ struct IgnitionView: View {
         // the headline number to the top edge; the summary bar's surface color
         // extends under the status bar via `background`'s default safe-area
         // bleed. The NavigationStack shell stays for sheets and any future push.
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationBarHiddenOnIOS()
         // Keeps month/time tracking the wall clock across a long shift; the model
         // ignores ticks once the operator overrides either picker. A `.task` loop
         // rather than an autoconnected `Timer.publish`, which kept a run-loop
