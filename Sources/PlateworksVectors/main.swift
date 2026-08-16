@@ -475,7 +475,10 @@ func xlsxCases() -> String {
     let empty = ShiftIn(dateMs: utcDateMs(2026, 8, 1), division: "", locationName: "Spring Gulch", obs: [])
 
     // (name, shifts, coordLat, coordLon) — coords chosen so the web's raw
-    // "lat, lon" string equals GeoPoint.rendered (≤5 dp, no trailing zeros).
+    // "lat, lon" string equals GeoPoint.rendered (≤6 dp, no trailing zeros).
+    // The web has no GeoPoint: app.js passes the typed lat/lon text straight
+    // through, so a case with more decimals than the core keeps would fail the
+    // xlsx byte-comparison for a formatting reason rather than a real one.
     let cases: [(String, [ShiftIn], String, String)] = [
         ("single-day-coords", [day1], "38.214", "-112.398"),
         ("multi-day-duplicate-tab", [day1, day2, day2b], "", ""),

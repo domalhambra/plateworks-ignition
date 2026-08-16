@@ -218,14 +218,20 @@ struct SiteEditor: View {
         // which writes back the identical coordinate — the model's manual-edit
         // detection would then flip provenance to .manual, so guard by only
         // committing a coordinate that actually differs (see commitCoordinate).
-        latText = String(fix.coordinate.latitude)
-        lonText = String(fix.coordinate.longitude)
+        //
+        // `latitudeText`, not `String(_:)` — the latter spells a fix out to
+        // every digit the sensor carried (`38.21437123456789`), which is what
+        // these two fields used to show. GeoPoint has already snapped the value
+        // to six decimals, so this is that same number, just written the way the
+        // exports write it.
+        latText = fix.coordinate.latitudeText
+        lonText = fix.coordinate.longitudeText
     }
 
     private func seedCoordinateText() {
         guard let c = model.siteCoordinate else { return }
-        latText = String(c.latitude)
-        lonText = String(c.longitude)
+        latText = c.latitudeText
+        lonText = c.longitudeText
     }
 
     /// Commit typed coordinates, preserving the last good position on partial or

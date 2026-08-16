@@ -649,6 +649,25 @@ document.addEventListener("input",ev=>{
 });
 // commit the typed obs time (refresh the live PIG preview) on blur/enter
 document.addEventListener("change",ev=>{ if(ev.target.dataset&&ev.target.dataset.field==="obsTime")render(); });
+// Snap a typed coordinate to six decimals — the precision GeoPoint applies in
+// its validating init, so a coordinate typed here records and exports as the
+// same number the native app would hold. Trailing zeros trimmed to match
+// GeoPoint.trim().
+//
+// On blur, never per keystroke: rewriting the field mid-entry would fight the
+// operator typing "38." or a lone "-". Anything that doesn't parse is left
+// exactly as typed, for the same reason — the web has no coordinate validation
+// and a half-entered field must not be silently rewritten.
+document.addEventListener("change",ev=>{
+  const f=ev.target.dataset&&ev.target.dataset.field;
+  if(f!=="coordLat"&&f!=="coordLon")return;
+  const raw=(S[f]||"").trim();
+  if(!raw)return;
+  const n=Number(raw);
+  if(!Number.isFinite(n))return;
+  const text=(Math.round(n*1e6)/1e6).toFixed(6).replace(/\.?0+$/,"");
+  if(text!==raw){ S[f]=text; saveState(); render(); }
+});
 document.getElementById("clock").textContent=clockLabel(now.getHours()*60+now.getMinutes());
 // Capture typed-but-not-yet-rendered edits when the app is backgrounded/closed —
 // and snap month/band back to the wall clock when the app comes forward, the

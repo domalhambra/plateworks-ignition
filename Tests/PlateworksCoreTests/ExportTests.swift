@@ -60,6 +60,43 @@ final class ExportTests: XCTestCase {
         XCTAssertEqual(GeoPoint(latitude: 38.21437, longitude: -112.3978).rendered, "38.21437, -112.3978")
         XCTAssertEqual(GeoPoint(latitude: 38.0, longitude: -112.0).rendered, "38, -112")
         XCTAssertEqual(GeoPoint(latitude: 38.2077, longitude: -112.41131).rendered, "38.2077, -112.41131")
+        // Six decimals survive; the seventh does not.
+        XCTAssertEqual(GeoPoint(latitude: 38.214371, longitude: -112.397801).rendered,
+                       "38.214371, -112.397801")
+        XCTAssertEqual(GeoPoint(latitude: 38.2143714, longitude: -112.3978016).rendered,
+                       "38.214371, -112.397802")
+    }
+
+    /// A sensor fix arrives with every digit a `Double` can hold. The validating
+    /// init is the one entry point for typed, parsed, and sensed input, so it is
+    /// where precision gets normalized — the model, the site editor's fields, and
+    /// the exported string then agree on the same number instead of disagreeing
+    /// in the seventh decimal.
+    func testValidatingInitSnapsToSixDecimals() {
+        let fix = GeoPoint(validating: 38.21437123456789, longitude: -112.39780187654321)
+        let point = try! XCTUnwrap(fix)
+        XCTAssertEqual(point.latitude, 38.214371, accuracy: 1e-12)
+        XCTAssertEqual(point.longitude, -112.397802, accuracy: 1e-12)
+        XCTAssertEqual(point.rendered, "38.214371, -112.397802")
+
+        // Nearest, not floored — truncation would walk every coordinate south
+        // and west by up to a decimal place's worth.
+        let up = try! XCTUnwrap(GeoPoint(validating: 38.2143759, longitude: -112.3978059))
+        XCTAssertEqual(up.rendered, "38.214376, -112.397806")
+
+        // The text the editor shows re-parses to the value the model holds, so
+        // mirroring a fix into the fields can't perturb the stored coordinate.
+        let round = try! XCTUnwrap(GeoPoint(validating: Double(point.latitudeText)!,
+                                            longitude: Double(point.longitudeText)!))
+        XCTAssertEqual(round, point)
+    }
+
+    /// Validation still rejects nonsense, and does it before any rounding — a
+    /// half-typed `380.2` must not become a coordinate at six decimals either.
+    func testValidatingInitStillRejectsOutOfRange() {
+        XCTAssertNil(GeoPoint(validating: 380.2, longitude: -112.3978))
+        XCTAssertNil(GeoPoint(validating: 38.21437, longitude: 181.000001))
+        XCTAssertNil(GeoPoint(validating: .nan, longitude: -112.3978))
     }
 
     func testTimeSerialAndSheetNaming() {
