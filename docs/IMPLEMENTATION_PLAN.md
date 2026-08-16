@@ -24,8 +24,8 @@ done in a cloud session or needs a Mac.
 | 3.1 Haptics | **Done** |
 | 3.2 Obs cadence notifications | **Done** (delivery needs a device) |
 | 3.3 App Intents / Siri / Shortcuts | **Done** (Siri phrasing needs a device) |
-| 3.4 WidgetKit + Live Activity | **In progress** — Task 1 of 15 done (`ObsGlance` in the core); rest needs a Mac. See [`PLAN_WIDGET_AND_WATCH.md`](PLAN_WIDGET_AND_WATCH.md) |
-| 3.5 watchOS app | **Not started — detailed plan written**, see [`PLAN_WIDGET_AND_WATCH.md`](PLAN_WIDGET_AND_WATCH.md) |
+| 3.4 WidgetKit + Live Activity | **Done** — all 15 tasks landed (widget, Live Activity, CI schemes); rendering and Activity lifecycle still need the device checklist in [`PLAN_WIDGET_AND_WATCH.md`](PLAN_WIDGET_AND_WATCH.md) |
+| 3.5 watchOS app | **Done (read-only)** — watch app + complication landed with 3.4; compiles and is CI-covered, behaviour unverified on a paired watch. See [`PLAN_WIDGET_AND_WATCH.md`](PLAN_WIDGET_AND_WATCH.md) |
 
 A **Swift 6.1 toolchain became available** in the authoring environment partway
 through, so core work is now verified locally (`swift test`, vector regeneration,
@@ -49,14 +49,15 @@ guardrail in `CLAUDE.md`). Two consequences changed the shape of the work:
   requires the capture card — so the two-way `WatchConnectivity` merge problem
   that dominated the original estimate is gone entirely.
 
-**3.4 and 3.5 remain**, and they are the two largest items in this document
-(2–3 and 3–5 days). Both add new Xcode targets whose value is in behaviour that
-can only be judged on a device — a widget's refresh cadence and staleness
-presentation, a watch app's complication and `WatchConnectivity` sync. Landing
-either half-verified into a safety-relevant app is a worse trade than landing it
-later with a Mac in the loop. 1.2 has already done the hard part of the widget's
-dependency: the record is in an App Group container, so the extension can read it
-without a second migration.
+**3.4 and 3.5 have since landed** (all 15 tasks of the task-level plan; widget,
+Live Activity, and read-only watch targets, CI-covered). What remains is the
+**device checklist** in `PLAN_WIDGET_AND_WATCH.md` — the behaviour that can only
+be judged on hardware: the widget's refresh cadence and staleness presentation,
+the Live Activity lifecycle, the complication, and `WatchConnectivity` sync.
+Treat that checklist as the release gate for these surfaces; the reasoning below
+about why device verification matters for a safety-relevant app stands. 1.2 did
+the hard part of the widget's dependency in advance: the record is in an App
+Group container, so the extension reads it without a second migration.
 
 ---
 

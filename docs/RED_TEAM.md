@@ -169,6 +169,13 @@ and that every one is flagged for map confirmation.
 
 ## Recommended, not done
 
+> **Status audit, 2026-08-15.** Most of this section has since shipped. Each item
+> below carries a **Status** line saying what landed and where; the original
+> reasoning is left as written — it is the record of why the work was deferred at
+> the time. Task-level status lives in
+> [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md)'s Status table, which this
+> audit confirmed against the code.
+
 Each of these was deliberate. The authoring environment had **no Swift toolchain
 and no Xcode**, so CI was the only verification available; changes whose risk
 outweighs what CI can prove were written up rather than landed blind.
@@ -181,6 +188,13 @@ outweighs what CI can prove were written up rather than landed blind.
 > should precede any new target.
 
 ### R1. The observation record lives in `UserDefaults` — Medium
+
+> **Status: done** (plan item 1.2). The record now lives as JSON files in the
+> App Group container, written atomically through `ObservationRecordStore`
+> (`App/PlateworksIgnition/Features/Watch/ObservationRecordStore.swift`), with
+> the container/location logic in `App/Shared/RecordLocation.swift`. Scalar
+> preferences stayed in `UserDefaults`. Targeting the App Group from the start
+> means the widget/watch work needs no second migration.
 
 `watch.shift` and `watch.history` are JSON blobs in `UserDefaults`, and `history`
 is explicitly designed to grow across a whole assignment. Every append re-encodes
@@ -199,6 +213,12 @@ migration works. This wants a local toolchain and a device test.
 
 ### R2. `RootView.init` rebuilds every model on each re-initialization — Low-medium
 
+> **Status: superseded** (plan item 2.5). `RootView.init` still uses
+> `State(initialValue:)`, but the expensive part of the cost — JSON-decoding the
+> entire shift and history out of `UserDefaults` on every re-initialization —
+> went away with R1: construction now reads through `ObservationRecordStore`.
+> Re-measure before doing anything further; there may be nothing left to fix.
+
 `State(initialValue:)` is not lazy: the expression is evaluated on every `RootView`
 initialization and the result discarded on all but the first. Each one runs
 `IgnitionModel()` (14 `UserDefaults` reads) and `WeatherWatchModel()` — which
@@ -207,12 +227,23 @@ impact is small today and grows with the record.
 
 ### R3. A second delete makes the first unrecoverable — Low
 
+> **Status: done** (plan item 2.2). `WeatherWatchModel` now keeps a bounded
+> undo stack (`removedObsStack`, depth `undoDepth = 10`) instead of the single
+> `lastRemovedObs` slot; sequential deletes restore in reverse order.
+
 `removeObs` overwrites `lastRemovedObs`, but the undo strip stays on screen saying
 "Observation removed". After two deletes the strip offers to restore only the
 second, with no indication the first is gone. Either keep a small undo stack or
 dismiss the strip when it goes stale.
 
 ### R4. Models are not `@MainActor` — Low (forward-looking)
+
+> **Status: done** (plan item 1.1). `Package.swift` is
+> `swift-tools-version: 6.0`, every target in `project.yml` sets
+> `SWIFT_VERSION: "6.0"`, and the models (`IgnitionModel`,
+> `WeatherWatchModel`), `SiteLocationProvider`, and the app-layer views carry
+> `@MainActor`. Landed before the App Intents / Live Activity / watch-sender
+> targets were written, as the sequencing note above required.
 
 The three `@Observable` models are mutated from views and read from `pendingObs`
 with no actor isolation. The package is `swift-tools-version: 5.9` in Swift 5
@@ -221,6 +252,14 @@ mode. The core types are already `Sendable`, so annotating the models and moving
 the core to `swiftLanguageModes(.v6)` is a contained piece of work.
 
 ### R5. The primary readouts don't scale with Dynamic Type — Low-medium
+
+> **Status: done, pending a visual pass on a device** (plan item 2.6). The
+> readout style is now `@ScaledMetric`-backed: see the scaling modifier
+> `readout(_:weight:relativeTo:)` in
+> `App/PlateworksIgnition/DesignSystem/Typography.swift`, scaled
+> `relativeTo: .body` with a minimum-scale guard. The fixed-size
+> `PlateworksFont.readout(_:)` remains only as the documented non-scaling
+> primitive behind it.
 
 `BadwaterFont.readout(_:)`, `.inputValue` (32 pt), and `.title` (22 pt) are fixed
 point sizes. `StatusStrip` and `ResultCard` already do the right thing with
@@ -234,6 +273,12 @@ readout sizes, verified at the larger accessibility sizes so the result cards
 don't clip.
 
 ### R6. Dew point is not clamped to the dry bulb — **WITHDRAWN, this finding was wrong**
+
+> **Status: closed** (plan item 2.1). The test tightening described below is
+> landed — `testDewPointNeverExceedsDryBulb` in
+> `Tests/PlateworksCoreTests/PsychrometricsTests.swift` asserts the exact
+> invariant. No clamp was added, deliberately; vectors did not move and no web
+> port was needed.
 
 **Original claim:** `Psychrometrics.compute` clamps RH to 100% but derives
 `dewPointF` from the unclamped vapor pressure, so a saturated reading can report
@@ -269,16 +314,35 @@ regeneration". The real fix was a test tightening with no vector movement at all
 
 ### R7. `ObsEditSheet` can still set a logged obs into the future — Low
 
+> **Status: done** (plan item 2.3). Capture and edit were unified into
+> `ObsFormSheet` (`App/PlateworksIgnition/Features/Watch/ObsFormSheet.swift`),
+> whose `futureTimeStrip` covers both modes — the edit path flags a
+> forward-dated timestamp (`edit-time-future`) with the same caution and
+> "Use now" action as the capture card. `ObsEditSheet` no longer exists as a
+> separate view.
+
 The future-time caution added to the capture card doesn't cover the edit sheet,
 which can move a logged observation's timestamp forward. Same class as finding 2.
 
 ### R8. `ZipArchive` traps on oversized entries — Low
+
+> **Status: done** (plan item 2.4). `ZipArchive` now declares its classic-ZIP
+> `Limit`s and a `Failure` error; `zipChecked(_:)` throws a diagnosable error
+> instead of trapping, and the non-throwing `zip(_:)` wrapper is a documented
+> precondition for the in-app workbook whose inputs cannot violate the limits.
 
 `UInt16(name.count)` and `UInt32(bytes.count)` trap rather than error on overflow.
 Unreachable with current inputs (a few kilobytes of sheet XML, short paths), but
 it is a crash rather than a failure if that ever changes.
 
 ### R9. The record is included in device backups — Informational
+
+> **Status: done** (plan item 2.7). The precise statement is recorded in the
+> commentary of `App/PlateworksIgnition/PrivacyInfo.xcprivacy`, including the
+> deliberate decision **not** to set `isExcludedFromBackup` (losing a shift
+> record to a phone replacement is the worse outcome). `docs/APP_STORE.md` and
+> the web copy make no "never leaves the device" claim, so nothing there needed
+> weakening.
 
 The privacy posture ("all compute on-device, no data collection") is accurate and
 well-evidenced. Worth stating precisely though: `UserDefaults` is included in
