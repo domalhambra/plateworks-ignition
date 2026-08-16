@@ -64,6 +64,11 @@ struct ObsFormSheet: View {
     /// The value this view last auto-seeded ``time`` to. Comparing the two is how
     /// a manual edit is detected; see ``timeIsManual``.
     @State private var autoSeeded: Date
+
+    /// The exact future time the operator has waved through with "That's okay".
+    /// Acknowledgment covers that one value — changing the time again re-arms
+    /// the caution, so a further-out time is never hidden by an old dismissal.
+    @State private var acknowledgedFutureTime: Date?
     /// The frozen observation once committed — its presence *is* the success
     /// screen.
     @State private var logged: WeatherObs?
@@ -328,21 +333,21 @@ struct ObsFormSheet: View {
     /// A time ahead of the clock would file the reading under an IRPG band that
     /// hasn't happened and make it the "latest" obs the hero and countdown read
     /// from. Back-filling a past time is legitimate and stays silent.
+    ///
+    /// The action is a plain acknowledgment, not a fix: a deliberately future
+    /// time is the operator's call (pre-staging the top-of-hour obs), so the
+    /// button dismisses the caution and leaves the time exactly as set.
     @ViewBuilder private var futureTimeStrip: some View {
-        if time.timeIntervalSince(isCapture ? now : Date()) > 60 {
+        if time.timeIntervalSince(isCapture ? now : Date()) > 60, time != acknowledgedFutureTime {
             StatusStrip(
                 icon: "clock.badge.exclamationmark",
                 message: isCapture
                     ? "Obs time is ahead of the clock — this reading would be filed in the future."
                     : "That time is ahead of the clock — this reading would be filed in the future.",
-                caution: true, actionTitle: "Use now",
-                action: {
-                    let t = Date()
-                    time = t
-                    autoSeeded = t
-                },
+                caution: true, actionTitle: "That's okay",
+                action: { acknowledgedFutureTime = time },
                 identifier: isCapture ? "obs-time-future" : "edit-time-future",
-                actionIdentifier: isCapture ? "obs-time-use-now" : "edit-time-use-now")
+                actionIdentifier: isCapture ? "obs-time-ok" : "edit-time-ok")
         }
     }
 

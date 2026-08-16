@@ -338,6 +338,47 @@ struct PIGSummaryBar: View {
     }
 }
 
+/// The pinned bottom "Start an Observation" bar, shared by both tabs so the
+/// entry point to the capture flow looks identical wherever the operator is.
+/// On **Obs** it opens the capture sheet directly and is disabled while the
+/// site gate holds (the confirm strip is on the same screen). On **Ignition**
+/// it hands off to the Obs tab instead — and stays tappable while gated,
+/// because the site confirm it points at lives on the *other* tab and a dead
+/// button there would be a dead end.
+struct StartObservationBar: View {
+    @Environment(\.colorScheme) private var scheme
+    let gated: Bool
+    /// `true` on Ignition (tap navigates to the gate), `false` on Obs
+    /// (the gate disables the button in place).
+    var tappableWhileGated = false
+    let identifier: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(gated ? "Confirm site to start" : "Start an Observation")
+                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .background(scheme == .dark ? Color.clear : PlateworksColor.accent,
+                            in: RoundedRectangle(cornerRadius: 16))
+                .overlay {
+                    if scheme == .dark {
+                        RoundedRectangle(cornerRadius: 16).strokeBorder(PlateworksColor.accent, lineWidth: 1.5)
+                    }
+                }
+                .foregroundStyle(scheme == .dark ? PlateworksColor.accent : Color.white)
+        }
+        .buttonStyle(.plain)
+        .disabled(gated && !tappableWhileGated)
+        .opacity(gated && !tappableWhileGated ? 0.5 : 1)
+        .accessibilityIdentifier(identifier)
+        .padding(.horizontal, Metric.screenPadding)
+        .padding(.top, 10).padding(.bottom, 8)
+        .background(PlateworksColor.surface)
+        .overlay(alignment: .top) { PlateworksColor.hairline.frame(height: 1) }
+    }
+}
+
 /// The PIG result card: severity stripe, big tabular readout, and sub-line.
 ///
 /// When a ``Sensitivity/Envelope`` is supplied it gains a **cell-edge marker**.

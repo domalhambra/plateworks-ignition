@@ -145,7 +145,9 @@ struct WatchView: View {
                 onSaved: { rescheduleCadence() })
         }
         .background(PlateworksColor.background)
-        .navigationTitle("Obs")
+        // Hidden for the same reason as IgnitionView's: no push navigation,
+        // and the tab bar + in-content header already name the screen twice.
+        .toolbar(.hidden, for: .navigationBar)
         // Suspends with the view: leaving the tab cancels the loop, and a
         // suspended app doesn't run it at all.
         .task {
@@ -655,7 +657,7 @@ struct WatchView: View {
         VStack(spacing: 5) {
             Text("No observations yet")
                 .font(PlateworksFont.title).foregroundStyle(PlateworksColor.ink)
-            Text("Confirm the site, set the reading, then Log Observation").fieldLabel()
+            Text("Confirm the site, then Start an Observation").fieldLabel()
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 26).padding(.horizontal, 14)
@@ -684,30 +686,9 @@ struct WatchView: View {
     /// lived nine sections up the scroll. Now the button that starts the hourly
     /// loop is the same one that ends it.
     private var logBar: some View {
-        let gated = model.needsSiteConfirmation
-        return Button {
+        StartObservationBar(gated: model.needsSiteConfirmation, identifier: "open-capture") {
             formPresentation = .capture
-        } label: {
-            Text(gated ? "Confirm site to log" : "Log Observation")
-                .font(.system(size: 17, weight: .bold, design: .rounded))
-                .frame(maxWidth: .infinity, minHeight: 56)
-                .background(scheme == .dark ? Color.clear : PlateworksColor.accent,
-                            in: RoundedRectangle(cornerRadius: 16))
-                .overlay {
-                    if scheme == .dark {
-                        RoundedRectangle(cornerRadius: 16).strokeBorder(PlateworksColor.accent, lineWidth: 1.5)
-                    }
-                }
-                .foregroundStyle(scheme == .dark ? PlateworksColor.accent : Color.white)
         }
-        .buttonStyle(.plain)
-        .disabled(gated)
-        .opacity(gated ? 0.5 : 1)
-        .accessibilityIdentifier("open-capture")
-        .padding(.horizontal, Metric.screenPadding)
-        .padding(.top, 10).padding(.bottom, 8)
-        .background(PlateworksColor.surface)
-        .overlay(alignment: .top) { PlateworksColor.hairline.frame(height: 1) }
     }
 
     /// Local `"HH:MM"` for the due-strip labels.

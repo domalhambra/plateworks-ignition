@@ -39,7 +39,14 @@ struct RootView: View {
     var body: some View {
         TabView(selection: $selection) {
             NavigationStack {
-                IgnitionView(model: ignition)
+                // The start bar rides the same deep-link path an App Intent
+                // uses: land on Obs, then open the capture form — WatchView
+                // consumes the flag and honours the site gate, so while gated
+                // the tap surfaces the confirm strip instead of the sheet.
+                IgnitionView(model: ignition, obsGated: watch.needsSiteConfirmation) {
+                    selection = .watch
+                    startCapture = true
+                }
             }
             .tabItem { Label("Ignition", systemImage: "flame") }
             .tag(Tab.ignition)

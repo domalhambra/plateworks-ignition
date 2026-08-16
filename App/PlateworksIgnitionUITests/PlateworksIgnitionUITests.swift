@@ -103,6 +103,31 @@ final class PlateworksIgnitionUITests: XCTestCase {
                       "PIG result stopped rendering in wet-bulb mode")
     }
 
+    /// The Ignition tab carries the same start bar as Obs, so the capture flow
+    /// can be entered from either tab. Gated, the tap lands on the Obs record
+    /// (where Confirm site is) without opening the form; confirmed, the same
+    /// handoff opens the capture sheet directly.
+    func testIgnitionTabStartsAnObservationAcrossTheTabHandoff() {
+        let app = launchApp()
+
+        let startBar = app.element("start-observation")
+        XCTAssertTrue(startBar.waitForExistence(timeout: 10),
+                      "Start bar missing from the Ignition tab")
+        startBar.tap()
+        XCTAssertTrue(app.element("watch-empty").waitForExistence(timeout: 10),
+                      "Gated start did not land on the Obs record")
+        XCTAssertFalse(app.element("capture-sheet").exists,
+                       "Capture sheet opened past the site gate")
+
+        app.element("confirm-site").tap()
+        app.tabBars.buttons["Ignition"].tap()
+        XCTAssertTrue(startBar.waitForExistence(timeout: 10),
+                      "Start bar missing after returning to Ignition")
+        startBar.tap()
+        XCTAssertTrue(app.element("capture-sheet").waitForExistence(timeout: 10),
+                      "Start from Ignition did not open the capture sheet")
+    }
+
     /// The whole hourly loop: open the capture form, read the receipt, commit,
     /// read the script, land back on the record with the reading as the hero.
     func testWatchTabLogsAnObservationThroughTheCaptureSheet() {

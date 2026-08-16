@@ -228,7 +228,11 @@ function renderIgnition(){
       <div class="disc">Decision support only — verify against your IRPG.</div>
     </div>
   </div>`;
-  return bar+body;
+  // The same start bar the Obs tab pins, so the capture flow can be entered
+  // from either tab. Unlike the Obs copy it stays tappable while gated: the
+  // tap carries the operator to the Obs tab, where Confirm site lives.
+  const startbar=`<div class="logbar"><button class="btn primary" data-action="goCapture">${S.siteConfirmed?"Start an Observation":"Confirm site to start"}</button></div>`;
+  return bar+body+startbar;
 }
 
 //====================== WATCH tab ======================
@@ -340,7 +344,7 @@ function renderWatch(){
     broadcastHtml=`<div class="group"><div class="sect"><span class="st">Broadcast · Radio</span></div>
       <div class="broadcast" style="position:relative;padding-top:22px">${esc(latest.broadcast)}<button class="copypill" data-action="copy" data-kind="broadcast">Copy</button></div></div>`;
   } else {
-    heroHtml=`<div class="empty"><div class="t">No observations yet</div><div class="lbl">Confirm the site, set the reading, then Log Observation</div></div>`;
+    heroHtml=`<div class="empty"><div class="t">No observations yet</div><div class="lbl">Confirm the site, then Start an Observation</div></div>`;
   }
 
   // The undo strip lives OUTSIDE the shift-log group: deleting the only obs of
@@ -408,7 +412,7 @@ function renderWatch(){
     ${undoHtml}${heroHtml}${broadcastHtml}${trendSectionHtml()}${logHtml}${siteFactorsHtml}${siteHtml}${exportHtml}${historyHtml}${newShiftHtml}
     <div class="disc">PIG is app-computed — not observed, not a forecast.</div>
   </div>`;
-  const logbar=`<div class="logbar"><button class="btn primary" data-action="openCapture" ${gated?"disabled":""}>${gated?"Confirm site to log":"Log Observation"}</button></div>`;
+  const logbar=`<div class="logbar"><button class="btn primary" data-action="openCapture" ${gated?"disabled":""}>${gated?"Confirm site to start":"Start an Observation"}</button></div>`;
   return body+logbar+formSheetHtml(pend);
 }
 
@@ -576,6 +580,14 @@ document.addEventListener("click",ev=>{
     // Seed the obs time from the clock each time the form opens — a sheet is
     // short-lived, so there is no stale stamp to inherit.
     S.pendingMin=nowMin(); S.sheet="capture"; render();
+  }
+  else if(a==="goCapture"){
+    // From the Ignition tab: land on Obs, then open the capture form past the
+    // gate — a gated shift stops at the record, where Confirm site is. Mirrors
+    // WatchView.consumeStartCapture on iOS.
+    S.tab="watch"; scr().scrollTop=0;
+    if(S.siteConfirmed){ S.pendingMin=nowMin(); S.sheet="capture"; }
+    render();
   }
   else if(a==="closeSheet"){ S.sheet=null; S.loggedId=null; render(); }
   else if(a==="obsNudge"){ S.pendingMin=Math.min(1439,Math.max(0,S.pendingMin+parseInt(b.dataset.d,10))); render(); }

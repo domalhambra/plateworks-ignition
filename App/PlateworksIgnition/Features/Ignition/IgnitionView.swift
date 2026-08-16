@@ -9,6 +9,12 @@ import PlateworksCore
 @MainActor
 struct IgnitionView: View {
     @Bindable var model: IgnitionModel
+    /// Whether the Obs tab's site gate is still up — mirrored here so the two
+    /// tabs' start bars always show the same state.
+    var obsGated: Bool = false
+    /// Hands off to the Obs tab (and opens the capture form past the gate).
+    /// `nil` hides the bar — previews and any host without a tab shell.
+    var onStartObservation: (() -> Void)? = nil
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -23,8 +29,25 @@ struct IgnitionView: View {
             .padding(Metric.screenPadding)
         }
         .safeAreaInset(edge: .top, spacing: 0) { summaryBar }
+        // The same start bar the Obs tab pins, so the capture flow's entry
+        // point exists wherever the operator happens to be — dialing in weather
+        // here shouldn't require knowing the log lives one tab over.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if let onStartObservation {
+                StartObservationBar(gated: obsGated, tappableWhileGated: true,
+                                    identifier: "start-observation",
+                                    action: onStartObservation)
+            }
+        }
         .background(PlateworksColor.background)
-        .navigationTitle("Ignition")
+        // No navigation bar: the app has no push navigation, the tab bar names
+        // the screen, and the in-content header names it again — the system bar
+        // contributed only dead space above the pinned PIG summary, with a
+        // stray large-title "Ignition" materializing on scroll. Hiding it moves
+        // the headline number to the top edge; the summary bar's surface color
+        // extends under the status bar via `background`'s default safe-area
+        // bleed. The NavigationStack shell stays for sheets and any future push.
+        .toolbar(.hidden, for: .navigationBar)
         // Keeps month/time tracking the wall clock across a long shift; the model
         // ignores ticks once the operator overrides either picker. A `.task` loop
         // rather than an autoconnected `Timer.publish`, which kept a run-loop
