@@ -143,16 +143,14 @@ function weatherGroup(sharedWith,showDerived){
     wetExtras=`<div class="chiprow"><div class="lbl">Elevation band · ${b.p} inHg</div>
       <div class="chips">${BANDS.map(x=>chip("band",x.n,bandLabel(x,S.alaska),S.band)).join("")}</div></div>`;
     if(showDerived){
-      // Everything the sling reading yields, read off where it was entered —
-      // this is the Humidity tab, absorbed. RH stays primary: it is the value
-      // that flows into the PIG chain.
+      // What the sling reading yields, read off where it was entered — this is
+      // the Humidity tab, absorbed. RH only: it is the value that flows into the
+      // PIG chain. Dew point and WB depression come from the same computation but
+      // feed nothing downstream, so they moved to slingDetail() at the foot of
+      // the Ignition screen. Twin of WeatherInputGroup.derivedReadouts.
       const r=psychro(S.dryBulbF,S.wetBulbF,b.p);
       wetExtras+=`<div class="chiprow"><label class="aktoggle"><input type="checkbox" data-action="toggleAlaska" ${S.alaska?"checked":""}> Alaska elevation thresholds</label></div>`;
       wetExtras+=`<div class="derived"><div><div class="lbl">Rel. humidity</div><div class="lbl" style="text-transform:none">computed from wet bulb</div></div><div class="big">${r.rh}%</div></div>`;
-      wetExtras+=`<div class="row">
-        <div class="statcard"><div class="lbl">Dew point</div><div class="val"><span class="num">${r.dew}</span><span class="un">°F</span></div></div>
-        <div class="statcard"><div class="lbl">WB depression</div><div class="val"><span class="num">${r.dep}</span><span class="un">°F</span></div></div>
-      </div>`;
       wetExtras+=`<div class="disc" style="text-align:left">Psychrometric estimate — verify against your belt weather kit tables.</div>`;
     }
   }
@@ -174,6 +172,23 @@ function weatherGroup(sharedWith,showDerived){
 }
 
 //====================== IGNITION tab ======================
+// Dew point and wet-bulb depression: same psychrometric computation as the RH
+// in the weather group, but neither feeds the PIG chain and neither is read
+// often on the line — so they sit at the foot of the screen instead of between
+// the wet-bulb entry and the calculation. Wet-bulb mode only; in direct-RH mode
+// there is no sling reading to detail. Twin of IgnitionView.slingDetailSection.
+function slingDetail(){
+  if(S.rhSource!=="wetBulb") return "";
+  const r=psychro(S.dryBulbF,S.wetBulbF,bandByNum(S.band).p);
+  return `<div class="group">
+      <div class="sect"><span class="st">Sling detail · from wet bulb</span></div>
+      <div class="row">
+        <div class="statcard"><div class="lbl">Dew point</div><div class="val"><span class="num">${r.dew}</span><span class="un">°F</span></div></div>
+        <div class="statcard"><div class="lbl">WB depression</div><div class="val"><span class="num">${r.dep}</span><span class="un">°F</span></div></div>
+      </div>
+    </div>`;
+}
+
 function renderIgnition(){
   const e=estimate(coreInputs()); const bu=e.unshaded.b, bs=e.shaded.b;
   const behU=BEHAV[bu]; const rhEff=effectiveRH(); const spot=windSpot(S.wind);
@@ -225,8 +240,9 @@ function renderIgnition(){
         <div class="de">${behU.d}</div>
         <div class="ca">${CAUTION}  IRPG p.49</div>
       </div>
-      <div class="disc">Decision support only — verify against your IRPG.</div>
     </div>
+    ${slingDetail()}
+    <div class="disc">Decision support only — verify against your IRPG.</div>
   </div>`;
   // The same start bar the Obs tab pins, so the capture flow can be entered
   // from either tab. Unlike the Obs copy it stays tappable while gated: the

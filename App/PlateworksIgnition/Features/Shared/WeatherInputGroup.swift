@@ -112,14 +112,16 @@ struct WeatherInputGroup: View {
         }
     }
 
-    /// Everything the sling reading yields, read off where it was entered: the RH
-    /// that flows into the PIG chain (read-only, brand teal, kept visually
-    /// primary), then dew point and wet-bulb depression beside it.
+    /// The RH the sling reading yields, read off where it was entered: read-only,
+    /// brand teal, kept visually primary because it is the value flowing into the
+    /// PIG chain.
     ///
-    /// The two stat cards are the ones the standalone Humidity screen carried,
-    /// reused verbatim — so their accessibility identifiers ("Dew point",
-    /// "WB depression", set by ``StatCard`` from the label) survive that screen's
-    /// deletion rather than being reinvented here.
+    /// Dew point and wet-bulb depression used to sit directly under this readout.
+    /// They fall out of the same computation but feed nothing downstream and are
+    /// rarely read on the line, so they now have their own section at the foot of
+    /// the Ignition screen — see ``IgnitionView`` `slingDetailSection`. What stays
+    /// here is only what the calculation actually consumes. The Watch capture card
+    /// never carried either (its `showsDerivedHumidity` is false).
     private func derivedReadouts(_ result: HumidityResult) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
@@ -138,11 +140,6 @@ struct WeatherInputGroup: View {
             .accessibilityIdentifier("derived-rh")
             .accessibilityLabel("Relative humidity from wet bulb")
             .accessibilityValue("\(result.relativeHumidity) percent")
-
-            HStack(spacing: 10) {
-                StatCard(label: "Dew point", value: "\(result.dewPointF)", unit: "°F")
-                StatCard(label: "WB depression", value: "\(result.wetBulbDepressionF)", unit: "°F")
-            }
 
             Text("Psychrometric estimate — verify against your belt weather kit tables.")
                 .font(PlateworksFont.labelSmall).foregroundStyle(PlateworksColor.muted)

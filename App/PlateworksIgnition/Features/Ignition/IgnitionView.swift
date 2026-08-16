@@ -25,6 +25,8 @@ struct IgnitionView: View {
                 calendarTimeSection
                 siteSection
                 resultsSection
+                slingDetailSection
+                disclaimer
             }
             .padding(Metric.screenPadding)
         }
@@ -166,7 +168,27 @@ struct IgnitionView: View {
             chainStrip
             results
             interpretation
-            disclaimer
+        }
+    }
+
+    // MARK: - Sling detail
+
+    /// Dew point and wet-bulb depression. Both fall out of the same psychrometric
+    /// computation as the RH shown up in Weather, but neither feeds the PIG chain
+    /// and neither is read often on the line — so they sit at the foot of the
+    /// screen rather than between the wet-bulb entry and the calculation, where
+    /// they used to push the inputs down for every sling reading.
+    ///
+    /// Wet-bulb mode only: in direct-RH mode there is no sling reading to detail.
+    @ViewBuilder private var slingDetailSection: some View {
+        if model.rhSource == .wetBulb, let result = model.derivedHumidity {
+            VStack(alignment: .leading, spacing: Metric.cardSpacing) {
+                SectionHeader(title: "Sling detail", annotation: "from wet bulb")
+                HStack(spacing: 10) {
+                    StatCard(label: "Dew point", value: "\(result.dewPointF)", unit: "°F")
+                    StatCard(label: "WB depression", value: "\(result.wetBulbDepressionF)", unit: "°F")
+                }
+            }
         }
     }
 
