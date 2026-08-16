@@ -2,20 +2,21 @@ import SwiftUI
 import PlateworksCore
 
 /// The shared **weather** inputs — humidity source, dry bulb, and either a direct
-/// RH or a wet bulb (with its elevation band, Alaska thresholds, and the derived
-/// psychrometrics). Both the Ignition screen and the Watch capture card render
-/// *these exact controls bound to the same* ``IgnitionModel``, so extracting them
-/// here keeps the two screens from drifting and lets the "shared with the other
-/// tab" cue stay honest.
+/// RH or a wet bulb (with its elevation band and Alaska thresholds). Both the
+/// Ignition screen and the Watch capture card render *these exact controls bound
+/// to the same* ``IgnitionModel``, so extracting them here keeps the two screens
+/// from drifting and lets the "shared with the other tab" cue stay honest.
 ///
-/// The wet-bulb-only extras (elevation band + derived readouts) sit at the end of
+/// **Inputs only.** Everything this group renders is something the operator sets;
+/// nothing computed is echoed back here. The derived RH was the last holdout and
+/// it duplicated the pinned summary bar, which shows the effective RH at all
+/// times in both humidity modes — so the sling reading now surfaces in exactly
+/// two places: the always-visible bar up top, and the Sling detail section at the
+/// foot of the Ignition screen for the two values the bar has no room for.
+///
+/// The wet-bulb-only extras (elevation band + Alaska switch) sit at the end of
 /// the group and animate in place, so switching humidity source resizes this one
 /// bounded block instead of inserting rows that shove the rest of the screen.
-///
-/// This group absorbed the standalone Humidity screen: sling a psychrometer,
-/// switch the source to *From wet bulb*, and the RH, dew point, and wet-bulb
-/// depression appear right where the reading was entered — no second tab, no
-/// hand-off to re-type.
 @MainActor
 struct WeatherInputGroup: View {
     @Bindable var model: IgnitionModel
@@ -23,13 +24,16 @@ struct WeatherInputGroup: View {
     /// section header (e.g. "Obs" on Ignition, "Ignition" on Obs). Pass `nil`
     /// to omit the header entirely.
     var sharedWith: String? = nil
-    /// Whether to show the read-only derived psychrometrics (RH, dew point,
-    /// wet-bulb depression) and the Alaska threshold toggle in wet-bulb mode.
-    /// Ignition shows them — the RH is the value flowing into the PIG chain, and
-    /// this is where the belt-weather-kit reading gets read off. The Watch
-    /// capture card keeps its footprint tighter and omits them; its band chips
-    /// still respect the Alaska setting, they just don't carry the switch.
-    var showsDerivedHumidity: Bool = true
+    /// Whether the Alaska threshold switch appears in wet-bulb mode. Ignition
+    /// carries it; the Watch capture card keeps its footprint tighter and omits
+    /// it — its band chips still respect the Alaska setting, they just don't
+    /// carry the switch.
+    ///
+    /// This used to gate the derived psychrometrics too, which is why it was
+    /// named `showsDerivedHumidity`. Nothing derived renders in this group any
+    /// more: the RH duplicated the pinned summary bar, and dew point and wet-bulb
+    /// depression moved to the foot of the Ignition screen.
+    var showsAlaskaToggle: Bool = true
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -53,10 +57,7 @@ struct WeatherInputGroup: View {
             }
             if model.rhSource == .wetBulb {
                 elevationBandPicker
-                if showsDerivedHumidity {
-                    alaskaToggle
-                    if let result = model.derivedHumidity { derivedReadouts(result) }
-                }
+                if showsAlaskaToggle { alaskaToggle }
             }
             windControls
         }
@@ -112,42 +113,4 @@ struct WeatherInputGroup: View {
         }
     }
 
-    /// The RH the sling reading yields, read off where it was entered: read-only,
-    /// brand teal, kept visually primary because it is the value flowing into the
-    /// PIG chain.
-    ///
-    /// Dew point and wet-bulb depression used to sit directly under this readout.
-    /// They fall out of the same computation but feed nothing downstream and are
-    /// rarely read on the line, so they now have their own section at the foot of
-    /// the Ignition screen — see ``IgnitionView`` `slingDetailSection`. What stays
-    /// here is only what the calculation actually consumes. The Watch capture card
-    /// never carried either (its `showsDerivedHumidity` is false).
-    private func derivedReadouts(_ result: HumidityResult) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Rel. humidity").fieldLabel()
-                    Text("computed from wet bulb")
-                        .font(PlateworksFont.labelSmall).foregroundStyle(PlateworksColor.muted)
-                }
-                Spacer()
-                HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text("\(result.relativeHumidity)").readout(32).foregroundStyle(PlateworksColor.accent)
-                    Text("%").readout(18).foregroundStyle(PlateworksColor.accent)
-                }
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityIdentifier("derived-rh")
-            .accessibilityLabel("Relative humidity from wet bulb")
-            .accessibilityValue("\(result.relativeHumidity) percent")
-
-            Text("Psychrometric estimate — verify against your belt weather kit tables.")
-                .font(PlateworksFont.labelSmall).foregroundStyle(PlateworksColor.muted)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity)
-        .background(PlateworksColor.surface, in: RoundedRectangle(cornerRadius: Metric.cardRadius))
-        .overlay(RoundedRectangle(cornerRadius: Metric.cardRadius).strokeBorder(PlateworksColor.hairline))
-    }
 }

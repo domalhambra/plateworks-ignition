@@ -104,7 +104,7 @@ struct IgnitionView: View {
     /// one block rather than shoving the sections below it. Carries the shared cue
     /// — this same weather is what the Watch tab logs.
     private var weatherSection: some View {
-        WeatherInputGroup(model: model, sharedWith: "Obs", showsDerivedHumidity: true)
+        WeatherInputGroup(model: model, sharedWith: "Obs", showsAlaskaToggle: true)
             .padding(Metric.cardSpacing)
             .background(PlateworksColor.surfaceSunk, in: RoundedRectangle(cornerRadius: Metric.cardRadius))
             .overlay(RoundedRectangle(cornerRadius: Metric.cardRadius).strokeBorder(PlateworksColor.hairline))
@@ -180,6 +180,11 @@ struct IgnitionView: View {
     /// they used to push the inputs down for every sling reading.
     ///
     /// Wet-bulb mode only: in direct-RH mode there is no sling reading to detail.
+    ///
+    /// Carries the psychrometric caveat, which used to sit with the derived RH in
+    /// the weather group. That readout is gone — it repeated the pinned summary
+    /// bar — but the caveat is about the derivation itself, not that one number,
+    /// so it belongs wherever the derived values are shown.
     @ViewBuilder private var slingDetailSection: some View {
         if model.rhSource == .wetBulb, let result = model.derivedHumidity {
             VStack(alignment: .leading, spacing: Metric.cardSpacing) {
@@ -188,6 +193,9 @@ struct IgnitionView: View {
                     StatCard(label: "Dew point", value: "\(result.dewPointF)", unit: "°F")
                     StatCard(label: "WB depression", value: "\(result.wetBulbDepressionF)", unit: "°F")
                 }
+                Text("Psychrometric estimate — verify against your belt weather kit tables.")
+                    .font(PlateworksFont.labelSmall).foregroundStyle(PlateworksColor.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

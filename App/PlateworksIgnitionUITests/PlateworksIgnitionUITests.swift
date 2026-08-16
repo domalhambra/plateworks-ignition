@@ -73,16 +73,24 @@ final class PlateworksIgnitionUITests: XCTestCase {
     }
 
     /// Wet-bulb mode is where the absorbed Humidity screen lives: the wet-bulb
-    /// stepper plus everything a sling reading yields — RH, dew point, wet-bulb
-    /// depression — and the Alaska threshold switch. Direct mode shows none of
-    /// it, which is what keeps the everyday screen short.
+    /// stepper and the Alaska threshold switch in the weather group, and dew
+    /// point and wet-bulb depression down in Sling detail. Direct mode shows
+    /// none of it, which is what keeps the everyday screen short.
+    ///
+    /// The derived RH is deliberately *not* asserted on: it has no in-page
+    /// readout any more. It repeated the pinned summary bar, which carries the
+    /// effective RH in both modes — so the assertion for it lives on
+    /// ``testPinnedSummaryCarriesTheSlingRH`` instead, where the value actually
+    /// shows.
     func testWetBulbSourceRevealsTheFullSlingReading() {
         let app = launchApp()
         // Direct mode (the launch default) carries none of the sling extras.
-        XCTAssertFalse(app.element("derived-rh").exists,
-                       "Derived RH showing in direct mode")
         XCTAssertFalse(app.element("alaska-toggle").exists,
                        "Alaska toggle showing in direct mode")
+        XCTAssertFalse(app.element("Dew point").exists,
+                       "Sling detail showing in direct mode")
+        XCTAssertFalse(app.element("WB depression").exists,
+                       "Sling detail showing in direct mode")
 
         let wetBulbSource = app.element("From wet bulb")
         XCTAssertTrue(wetBulbSource.waitForExistence(timeout: 10),
@@ -91,8 +99,6 @@ final class PlateworksIgnitionUITests: XCTestCase {
 
         XCTAssertTrue(app.element("Wet bulb").waitForExistence(timeout: 10),
                       "Wet bulb stepper did not appear")
-        XCTAssertTrue(app.element("derived-rh").exists,
-                      "Derived RH did not appear in wet-bulb mode")
         XCTAssertTrue(app.element("Dew point").exists,
                       "Dew point missing — it moved here from the Humidity tab")
         XCTAssertTrue(app.element("WB depression").exists,
@@ -101,6 +107,31 @@ final class PlateworksIgnitionUITests: XCTestCase {
                       "Alaska thresholds toggle missing in wet-bulb mode")
         XCTAssertTrue(app.element("result-Unshaded").exists,
                       "PIG result stopped rendering in wet-bulb mode")
+    }
+
+    /// The sling RH has exactly one on-screen home now that the weather group's
+    /// readout is gone: the pinned summary bar. If that ever stops reflecting the
+    /// wet-bulb computation, the number disappears from the app entirely — the
+    /// failure this test exists to catch.
+    func testPinnedSummaryCarriesTheSlingRH() {
+        let app = launchApp()
+        let summary = app.element("pig-summary")
+        XCTAssertTrue(summary.waitForExistence(timeout: 10), "Pinned summary bar missing")
+
+        let directValue = summary.value as? String
+        app.element("From wet bulb").tap()
+        XCTAssertTrue(app.element("Wet bulb").waitForExistence(timeout: 10),
+                      "Wet bulb stepper did not appear")
+
+        // The bar is one accessibility element whose value spells out the whole
+        // reading, humidity included; switching source recomputes the RH, so the
+        // spoken value has to move with it.
+        let slingValue = summary.value as? String
+        XCTAssertNotNil(slingValue, "Pinned summary carries no spoken value")
+        XCTAssertNotEqual(directValue, slingValue,
+                          "Pinned summary did not follow the switch to wet-bulb RH")
+        XCTAssertTrue(slingValue?.contains("humidity") == true,
+                      "Pinned summary stopped reporting humidity")
     }
 
     /// The Ignition tab carries the same start bar as Obs, so the capture flow

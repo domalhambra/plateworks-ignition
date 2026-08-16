@@ -271,7 +271,7 @@ struct ObsFormSheet: View {
     /// record can never move the live estimate on the Ignition tab.
     @ViewBuilder private var weatherSection: some View {
         if isCapture {
-            WeatherInputGroup(model: ignition, sharedWith: "Ignition", showsDerivedHumidity: false)
+            WeatherInputGroup(model: ignition, sharedWith: "Ignition", showsAlaskaToggle: false)
         } else {
             HStack(spacing: 10) {
                 StepperCard(label: "Dry bulb", unit: "°F", value: $dryBulb, range: 10...130)

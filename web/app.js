@@ -132,7 +132,7 @@ function stepper(field,label,unit,val,min,max,step,cls){
 }
 
 //====================== Shared weather group (Ignition + Watch) ======================
-function weatherGroup(sharedWith,showDerived){
+function weatherGroup(sharedWith,showAlaska){
   const src=S.rhSource;
   let secondStepper = src==="direct"
     ? stepper("relativeHumidity","Rel. humidity","%",S.relativeHumidity,0,100,1,"sunkbg")
@@ -142,16 +142,12 @@ function weatherGroup(sharedWith,showDerived){
     const b=bandByNum(S.band);
     wetExtras=`<div class="chiprow"><div class="lbl">Elevation band · ${b.p} inHg</div>
       <div class="chips">${BANDS.map(x=>chip("band",x.n,bandLabel(x,S.alaska),S.band)).join("")}</div></div>`;
-    if(showDerived){
-      // What the sling reading yields, read off where it was entered — this is
-      // the Humidity tab, absorbed. RH only: it is the value that flows into the
-      // PIG chain. Dew point and WB depression come from the same computation but
-      // feed nothing downstream, so they moved to slingDetail() at the foot of
-      // the Ignition screen. Twin of WeatherInputGroup.derivedReadouts.
-      const r=psychro(S.dryBulbF,S.wetBulbF,b.p);
+    if(showAlaska){
+      // Inputs only — nothing computed is echoed back in this group. The derived
+      // RH used to sit here and repeated the pinned bar, which shows the
+      // effective RH at all times; dew point and WB depression are in
+      // slingDetail() at the foot of the screen. Twin of WeatherInputGroup.
       wetExtras+=`<div class="chiprow"><label class="aktoggle"><input type="checkbox" data-action="toggleAlaska" ${S.alaska?"checked":""}> Alaska elevation thresholds</label></div>`;
-      wetExtras+=`<div class="derived"><div><div class="lbl">Rel. humidity</div><div class="lbl" style="text-transform:none">computed from wet bulb</div></div><div class="big">${r.rh}%</div></div>`;
-      wetExtras+=`<div class="disc" style="text-align:left">Psychrometric estimate — verify against your belt weather kit tables.</div>`;
     }
   }
   const wind=S.wind; let windExtra="";
@@ -186,6 +182,7 @@ function slingDetail(){
         <div class="statcard"><div class="lbl">Dew point</div><div class="val"><span class="num">${r.dew}</span><span class="un">°F</span></div></div>
         <div class="statcard"><div class="lbl">WB depression</div><div class="val"><span class="num">${r.dep}</span><span class="un">°F</span></div></div>
       </div>
+      <div class="disc" style="text-align:left">Psychrometric estimate — verify against your belt weather kit tables.</div>
     </div>`;
 }
 
