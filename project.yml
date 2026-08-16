@@ -16,6 +16,24 @@ configFiles:
   Debug: signing.xcconfig
   Release: signing.xcconfig
 
+# The single source of truth for the version, inherited by every target.
+#
+# It has to live here, at project level, because App Store Connect rejects an
+# upload whose embedded bundles disagree with their container: bump the app to
+# build 2 while the widget and watch stay at 1 and validation fails with
+# "CFBundleShortVersionString ... must match the version of its containing
+# bundle". Three of the four bundles use a hand-specified Info.plist, and
+# XcodeGen fills those with a *literal* "1.0"/"1" unless told otherwise — so
+# each one also references $(MARKETING_VERSION)/$(CURRENT_PROJECT_VERSION)
+# explicitly in its `info.properties`. Bump here and everything follows.
+#
+# CURRENT_PROJECT_VERSION must increase for every upload — App Store Connect
+# refuses a build number it has already seen, even for a rejected build.
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
 options:
   bundleIdPrefix: org.plateworks
   deploymentTarget:
@@ -71,8 +89,10 @@ targets:
         # "Plateworks Ignition.app/Plateworks Ignition". PlateworksIgnitionTests could
         # never launch as a result. The user-visible home-screen name comes from
         # INFOPLIST_KEY_CFBundleDisplayName below, which is what it is for.
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        #
+        # MARKETING_VERSION / CURRENT_PROJECT_VERSION are inherited from the
+        # project-level settings block — see the note there before adding them
+        # back to any target.
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Plateworks Ignition
         INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent
@@ -152,6 +172,11 @@ targets:
       path: App/PlateworksWidget/Info.plist
       properties:
         CFBundleDisplayName: Plateworks Ignition
+        # Track the project-level version rather than XcodeGen's literal
+        # default, or this bundle freezes at 1.0/1 and fails upload validation
+        # the first time the app's build number moves.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
@@ -202,6 +227,9 @@ targets:
       path: App/PlateworksWatch/Info.plist
       properties:
         CFBundleDisplayName: Ignition
+        # Same reason as the widget's — see that target's note.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         # WKApplication marks this as a modern *single-target* watch app. Without
         # it the installer reads the bundle as a legacy WatchKit 2.0 app and
         # refuses the whole containing iOS app:
@@ -215,8 +243,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.plateworks.ignition.watchkitapp
         SWIFT_VERSION: "6.0"
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "4"
         SKIP_INSTALL: YES
 
@@ -248,14 +274,15 @@ targets:
       path: App/PlateworksWatchWidget/Info.plist
       properties:
         CFBundleDisplayName: Ignition
+        # Same reason as the widget's — see that target's note.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.plateworks.ignition.watchkitapp.widget
         SWIFT_VERSION: "6.0"
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "4"
         SKIP_INSTALL: YES
 
