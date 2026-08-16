@@ -52,6 +52,17 @@ Native app (macOS + Xcode):
 brew install xcodegen         # once
 xcodegen generate             # PlateworksIgnition.xcodeproj from project.yml
 ```
+
+**Device builds (physical iPhone):** the signing team lives in
+`signing.local.xcconfig` (git-ignored; see `signing.xcconfig` for the shape),
+pulled in at project level so it survives `xcodegen generate`. **Never pass
+`DEVELOPMENT_TEAM=` on the `xcodebuild` command line** — a command-line team
+override breaks `-allowProvisioningUpdates`' App Group registration: the
+generated profiles come back with an *empty* `application-groups` array and all
+four signed targets fail with "doesn't match the entitlements file's value".
+With the team in the xcconfig, `xcodebuild build -scheme PlateworksIgnition
+-destination 'generic/platform=iOS' -allowProvisioningUpdates` provisions
+everything (cert, App IDs, App Groups, profiles) unattended.
 The color palette is generated: `python3 scripts/generate_color_assets.py`.
 
 The `web/` app has **no build step** and no dependencies — it's static files served as-is.

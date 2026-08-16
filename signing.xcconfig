@@ -1,0 +1,12 @@
+// Project-level base configuration, wired in by project.yml's `configFiles`.
+// Its only job is to pull in the developer's personal signing settings.
+//
+// `#include?` is xcconfig's optional include: if signing.local.xcconfig does
+// not exist (CI, fresh clone), the line is silently skipped and no team is
+// set — simulator and macOS builds need none. To build to a physical device,
+// create signing.local.xcconfig (git-ignored) next to this file containing:
+//
+//   DEVELOPMENT_TEAM = <your team ID>
+//
+// Automatic signing does the rest: certificate, App IDs, App Groups, profiles.
+#include? "signing.local.xcconfig"

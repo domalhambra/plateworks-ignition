@@ -5,6 +5,17 @@
 # at the repo root), which holds all IRPG table data and calculation logic and
 # is independently unit-tested on Linux CI.
 name: PlateworksIgnition
+
+# Project-level build settings, applied beneath every target's own settings.
+# signing.xcconfig is committed and does one thing: optionally include
+# signing.local.xcconfig (git-ignored), where a developer puts their own
+# DEVELOPMENT_TEAM for device builds. Missing local file = no team, which is
+# what CI and fresh clones want. Do not put a team ID anywhere in this spec —
+# a target-level DEVELOPMENT_TEAM would override the xcconfig and break this.
+configFiles:
+  Debug: signing.xcconfig
+  Release: signing.xcconfig
+
 options:
   bundleIdPrefix: org.plateworks
   deploymentTarget:
@@ -88,9 +99,17 @@ targets:
         # models and the SwiftUI views are @MainActor-isolated accordingly.
         SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1,2"
-        # Developer supplies their own signing team.
-        DEVELOPMENT_TEAM: ""
+        # The signing team comes from signing.local.xcconfig (git-ignored, via
+        # the project-level signing.xcconfig) — deliberately NOT set here, and
+        # deliberately not passed as an `xcodebuild DEVELOPMENT_TEAM=` override
+        # either: a command-line team override breaks -allowProvisioningUpdates'
+        # App Group registration (the generated profiles come back with an empty
+        # application-groups array and signing fails).
         CODE_SIGN_STYLE: Automatic
+        # No non-exempt encryption (no custom crypto; the app makes no network
+        # requests at all). Pre-answers App Store Connect's export-compliance
+        # question so TestFlight builds don't stall on it.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
 
   # The home-screen and lock-screen glanceable surfaces. A separate process from
   # the app: it reads the shared App Group container through RecordReader and
