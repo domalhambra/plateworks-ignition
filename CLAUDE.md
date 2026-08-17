@@ -70,7 +70,7 @@ The `web/` app has **no build step** and no dependencies — it's static files s
 ## Deploy & hosting
 
 - **Continuous deploy:** the web app is a **git-connected Netlify site** (`plateworks-ignition`). Pushing to `main` auto-deploys `web/` (base directory `web/`, no build command). There is no manual deploy step.
-- **When you change any cached web asset, bump `CACHE` in `web/sw.js`** (currently `badwater-ignition-v9` → `-v10`, …) or field devices keep serving the old app offline.
+- **When you change any cached web asset, bump `CACHE` in `web/sw.js`** — bump the trailing integer, never reword the prefix. Read the current value from the file; do not assume one. If you skip the bump, field devices keep serving the old app offline.
 - **Domain:** `ignition.plateworks.org` (canonical). `obs.plateworks.org` is a domain alias that **301-redirects** (rule in `web/netlify.toml`). Proxied CNAMEs → `plateworks-ignition.netlify.app` in the `plateworks.org` Cloudflare zone.
 - **Legacy hosts** `ignition.badwater.guide` / `obs.badwater.guide` 301 to the canonical host via a Cloudflare redirect rule in the `badwater.guide` zone (cutover 2026-07-28, migration Phase 2; the 48h tombstone dwell was waived — the app was pre-launch with no installed users). Their DNS points at a proxied dummy (`A 192.0.2.1`); the old `badwater-ignition` Netlify site is deleted. The `tombstone` branch remains in the repo as the record of the cutover; it serves nothing and must never be merged.
 - GitHub: `domalhambra/plateworks-ignition` (renamed from `badwater-ignition`; old URLs redirect, but anything comparing `github.repository` by string — workflow repo guards — must use the new name).
@@ -86,7 +86,7 @@ The `web/` app has **no build step** and no dependencies — it's static files s
   - **Freezing a reading requires the capture card.** No surface outside the app creates an observation — hence the log intent opens the app, and the watch app is read-only.
   - The line is *not* "computed values never leave the app": the radio script, IMET `.xlsx` and NWS spot request have always carried PIG outward and are right to. The line is **volatile vs. frozen** and **persistent vs. transient**.
 - **Offline-first & private.** All compute runs on-device / in-page, and **no observation data ever leaves the device**. That is the invariant; keep it absolute. The native app collects nothing at all (see `PrivacyInfo.xcprivacy`). The **web PWA** carries one outbound host as of 2026-07-28: Plausible analytics — cookieless, no personal data, no cross-site tracking — allowed explicitly in `web/netlify.toml`'s CSP under both `script-src` and `connect-src`. It is deliberate, not drift; **do not "fix" the CSP by removing it.** Since 2026-08-17 it carries named interaction events too (`web/analytics.js`), under a rule that keeps the invariant absolute: **events name which control was used, never what was entered** — no reading, note, coordinate or count of observations is ever a prop, and the smoke test asserts it. Full taxonomy and constraints in `docs/ANALYTICS.md`. Beyond that one host, don't add network dependencies, and never route anything a user typed through one.
-- Follows the workspace **Project Conventions** in `../CLAUDE.md` (plan before multi-step work; verification is the last step; reciprocal cross-referencing). Session work is logged to the PKM `SESSION_LOG.md` via the session-log skill, not a repo-local log.
+- Follows the workspace **Project Conventions** in `../CLAUDE.md` (plan before multi-step work; verification is the last step; reciprocal cross-referencing). For session logs, use § Session logging below.
 
 ## Map of the repo
 
@@ -116,7 +116,13 @@ Log sessions to the Notion **Session Log** database. This is written here, in th
 - `Activity` — build | fix | research | write | ops | plan
 - `Status` — Complete | In Progress | Blocked
 - `Shipped` — checkbox (`"__YES__"`) for deploys and launches
-- `Tags` — JSON array **encoded as a string**, not a native array
+- `Tags` — JSON array **encoded as a string**, not a native array. It is a
+  constrained multi-select. A value outside the allowed set fails the whole write
+  with a `validation_error`. Allowed today: `skill development`, `Notion`,
+  `admin`, `Human Design`, `coaching`, `writing`, `DMIHC`, `Claude`,
+  `Ghost CMS`, `SEO`, `Tecopa Plateworks`. Pick from these; do not invent one. If
+  none fit, omit `Tags`. A missing tag costs nothing; an invented one loses the
+  whole log.
 - `Quarter` computes itself from Date. Never set it by hand.
 
 Body sections: What We Did / Open Threads / Next Steps / Notes.
