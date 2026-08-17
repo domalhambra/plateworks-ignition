@@ -69,6 +69,15 @@ const server = http.createServer((req, res) => {
     errors.push(m.text());
   });
   await page.addInitScript(() => localStorage.clear());
+  // Record analytics events instead of sending them. Installed before any page
+  // script, so index.html's `window.plausible = window.plausible || …` stub
+  // keeps this spy and the real plausible.io script (which never loads here
+  // anyway, and skips localhost by default) can't overwrite it.
+  await page.addInitScript(() => {
+    window.__pa = [];
+    window.plausible = function () { window.__pa.push([].slice.call(arguments)); };
+    window.plausible.init = function () {};
+  });
   await page.goto(base, { waitUntil: "networkidle" });
   const settle = () => page.waitForTimeout(150);
 
@@ -91,9 +100,17 @@ const server = http.createServer((req, res) => {
   const ak = await page.$$eval('[data-field="band"]', e => e.map(x => x.textContent.trim()));
   check("Alaska relabels the band chips", JSON.stringify(conus) !== JSON.stringify(ak));
   check("Alaska band-1 label matches ElevationBand.alaskaLabel", ak[0] === "0–300 ft", ak[0]);
-  const rhAk = await page.$eval(".derived .big", e => e.textContent.trim());
+  // Read the effective RH off the pinned bar. It used to be read from the
+  // group's own `.derived` readout, which was dropped as a duplicate of exactly
+  // this node — the check went stale (and this whole script stopped running) at
+  // that commit, since it is manual rather than CI.
+  const pinnedRH = () => page.$eval(".pigbar .wxrow", el => {
+    const n = [...el.querySelectorAll(".wxnode")].find(x => x.querySelector(".k").textContent.trim() === "RH");
+    return n.querySelector(".v").textContent.trim();
+  });
+  const rhAk = await pinnedRH();
   await page.click(".aktoggle input"); await settle();
-  const rhConus = await page.$eval(".derived .big", e => e.textContent.trim());
+  const rhConus = await pinnedRH();
   check("Alaska changes labels, not arithmetic", rhAk === rhConus, `${rhAk} vs ${rhConus}`);
   await page.click('[data-action="set"][data-field="rhSource"][data-val="direct"]');
 
@@ -166,6 +183,67 @@ const server = http.createServer((req, res) => {
   });
   check("a month override never travels into the record",
     m.frozen === m.shiftMonth, `frozen=${m.frozen} shift=${m.shiftMonth} override=${m.override}`);
+
+  console.log("\n[analytics — web/analytics.js]");
+  // The privacy invariant is the point of these checks, not the coverage: the
+  // event stream may name a control, never a reading. SENTINEL is typed into the
+  // note field and must not appear anywhere in what would have been sent.
+  const SENTINEL = "leakcanary-9137";
+  const paNames = async () => page.evaluate(() => window.__pa.map(a => a[0]));
+  const paFind = async (name) => page.evaluate(
+    n => window.__pa.filter(a => a[0] === n).map(a => (a[1] && a[1].props) || {}), name);
+
+  check("App Open reports the display mode",
+    (await paFind("App Open")).some(p => p.mode === "Browser"), JSON.stringify(await paFind("App Open")));
+
+  await page.evaluate(() => { window.__pa.length = 0; });
+  await page.click('[data-action="tab"][data-val="ignition"]'); await settle();
+  await page.click('[data-action="tab"][data-val="watch"]'); await settle();
+  check("tab switches are reported by name",
+    JSON.stringify((await paFind("Tab")).map(p => p.tab)) === '["Ignition","Obs"]',
+    JSON.stringify(await paFind("Tab")));
+
+  // A stepper burst must collapse to one event naming the field — per-tap events
+  // would bury everything else and say nothing extra.
+  await page.click('[data-action="tab"][data-val="ignition"]'); await settle();
+  // Let any adjustment still coalescing from the sections above land first, so
+  // this measures only the burst below.
+  await page.waitForTimeout(3000);
+  await page.evaluate(() => { window.__pa.length = 0; });
+  for (let i = 0; i < 5; i++) { await page.click('[data-action="step"][data-field="dryBulbF"]'); }
+  const dryAdjusts = async () => (await paFind("Adjust")).filter(p => p.field === "dryBulbF");
+  check("a stepper burst sends nothing yet", (await dryAdjusts()).length === 0);
+  await page.waitForTimeout(3000);
+  check("a stepper burst collapses to one Adjust naming the field",
+    (await dryAdjusts()).length === 1, JSON.stringify(await paFind("Adjust")));
+
+  await page.evaluate(() => { window.__pa.length = 0; });
+  await page.click('[data-action="tab"][data-val="watch"]'); await settle();
+  await page.click('[data-action="openCapture"]'); await settle();
+  await page.fill('[data-field="note"]', SENTINEL);
+  await page.click('[data-action="logObs"]'); await settle();
+  await page.click('[data-action="closeSheet"]'); await settle();
+  await page.click('[data-action="copy"][data-kind="broadcast"]'); await settle();
+  await page.click('[data-action="exportXlsx"]'); await settle();
+  const names = await paNames();
+  check("capture funnel is reported", names.includes("Capture Opened") && names.includes("Observation Logged"),
+    JSON.stringify(names));
+  check("sheet close names the sheet",
+    (await paFind("Sheet Closed")).some(p => p.sheet === "Broadcast"), JSON.stringify(await paFind("Sheet Closed")));
+  check("radio-script copy is reported by kind",
+    (await paFind("Copy")).some(p => p.kind === "Broadcast"), JSON.stringify(await paFind("Copy")));
+  // The blob: download is invisible to Plausible's own file-download detector —
+  // if this regresses, the export silently stops being counted.
+  check("the .xlsx export is reported", names.includes("Export Spreadsheet"), JSON.stringify(names));
+
+  const leak = await page.evaluate(sent => {
+    const blob = JSON.stringify(window.__pa);
+    // The note text, and the live readings, must not appear in any event.
+    const readings = [String(S.dryBulbF), String(S.relativeHumidity), String(S.wetBulbF)];
+    return { sentinel: blob.includes(sent), readings: readings.filter(r => new RegExp("\\b" + r + "\\b").test(blob)), blob };
+  }, SENTINEL);
+  check("no typed text reaches the event stream", !leak.sentinel, leak.blob.slice(0, 200));
+  check("no reading reaches the event stream", leak.readings.length === 0, leak.readings.join(","));
 
   console.log("\n[page health]");
   check("no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));

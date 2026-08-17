@@ -5,16 +5,18 @@ A standalone, offline-capable web build of the Plateworks Ignition field tool
 Ignition's weather group). Everything runs in the browser — the IRPG (PMS 461)
 tables, the belt‑weather‑kit psychrometrics, the radio script, and the IMET
 `.xlsx` export are all computed locally, so it works with no signal on the
-fireline and no observation data ever leaves the device. (The one outbound
-request is cookieless Plausible page analytics — see `netlify.toml`.)
+fireline and no observation data ever leaves the device. (The one outbound host
+is cookieless Plausible analytics — page views plus interaction events that name
+which control was used, never what was entered. See `../docs/ANALYTICS.md`.)
 
 ## What's in this folder
 
 | File | Purpose |
 |---|---|
-| `index.html` | App shell + styles (inline CSS); loads the two scripts below. |
+| `index.html` | App shell + styles (inline CSS); loads the scripts below, plus the Plausible tag. |
 | `engine.js` | **Pure calculation engine** — the JS twin of `Sources/PlateworksCore` (IRPG tables, psychrometrics, radio script, IMET `.xlsx`). No DOM/storage/clock, so Node loads it for conformance testing. |
 | `app.js` | UI layer — state, rendering, event wiring (the twin of `App/`). |
+| `analytics.js` | Plausible interaction events. Web-only (no native twin), strictly observational — it listens, it never calls into the app. See `../docs/ANALYTICS.md`. |
 | `manifest.webmanifest` | PWA manifest (installable, standalone display). |
 | `sw.js` | Service worker — caches the app for **offline** use. **Bump `CACHE` on every web change** or field devices keep the old app. |
 | `icon.svg`, `icon-512.png`, `apple-touch-icon.png` | App icons / favicon. |
