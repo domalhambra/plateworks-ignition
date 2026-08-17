@@ -90,5 +90,5 @@ Swift / SwiftUI · XcodeGen · vanilla-JS PWA (no build step, no deps) · Netlif
 ## Guardrails / principles
 
 - **Safety-relevant.** Decision-support only; cell-exact fidelity to the printed IRPG is non-negotiable, and every table value stays provenance-documented.
-- **Offline-first, private.** All compute runs on-device / in-page, and no observation data ever leaves the device. The native app collects nothing. The web PWA added cookieless Plausible page analytics on 2026-07-28 (page views only, no personal data, no cross-site tracking); the principle is now "no user data collected", not literally "no outbound requests". Worth a deliberate re-wording if the stricter promise is the one intended.
+- **Offline-first, private.** All compute runs on-device / in-page, and no observation data ever leaves the device. The native app collects nothing. The web PWA added cookieless Plausible analytics on 2026-07-28 — page views, and named interaction events since 2026-08-17 (no personal data, no cross-site tracking). Events name which control was used, never what was entered: no reading, note or coordinate is ever reported, and `conformance/smoke-web-ui.js` asserts it. The principle is "no user data collected", not literally "no outbound requests". See `docs/ANALYTICS.md`.
 - **Parity is enforced, not promised.** The two ports never diverge silently.

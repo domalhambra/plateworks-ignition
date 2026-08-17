@@ -22,11 +22,12 @@
 
 # Security + privacy headers. Every calculation (IRPG tables, psychrometrics,
 # .xlsx export) still runs locally in-page — no observation data ever leaves the
-# device. The one outbound request is Plausible page analytics, added 2026-07-28:
-# cookieless, no personal data, no cross-site tracking. It is allowed explicitly
-# in script-src (to load the script) and connect-src (for its event beacon).
-# Without BOTH, the CSP blocks it silently and the tag looks installed but
-# reports nothing.
+# device. The one outbound host is Plausible analytics, added 2026-07-28:
+# cookieless, no personal data, no cross-site tracking. It carries page views
+# and — since web/analytics.js — named interaction events (which control was
+# used, never what was entered). It is allowed explicitly in script-src (to load
+# the script) and connect-src (for its event beacon). Without BOTH, the CSP
+# blocks it silently and the tag looks installed but reports nothing.
 [[headers]]
   for = "/*"
   [headers.values]
@@ -62,6 +63,11 @@
 
 [[headers]]
   for = "/app.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/analytics.js"
   [headers.values]
     Cache-Control = "no-cache"
 

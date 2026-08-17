@@ -85,7 +85,7 @@ The `web/` app has **no build step** and no dependencies — it's static files s
   - **Transient, explicitly-requested read-outs may report the live estimate** — the operator asked a second ago and hears the IRPG caveat in the same breath. This is why `CurrentIgnitionIntent` speaking a live PIG is fine and a widget showing one is not.
   - **Freezing a reading requires the capture card.** No surface outside the app creates an observation — hence the log intent opens the app, and the watch app is read-only.
   - The line is *not* "computed values never leave the app": the radio script, IMET `.xlsx` and NWS spot request have always carried PIG outward and are right to. The line is **volatile vs. frozen** and **persistent vs. transient**.
-- **Offline-first & private.** All compute runs on-device / in-page, and **no observation data ever leaves the device**. That is the invariant; keep it absolute. The native app collects nothing at all (see `PrivacyInfo.xcprivacy`). The **web PWA** carries one outbound request as of 2026-07-28: Plausible page analytics — cookieless, no personal data, no cross-site tracking — allowed explicitly in `web/netlify.toml`'s CSP under both `script-src` and `connect-src`. It is deliberate, not drift; **do not "fix" the CSP by removing it.** Beyond that one line, don't add network dependencies, and never route anything a user typed through one.
+- **Offline-first & private.** All compute runs on-device / in-page, and **no observation data ever leaves the device**. That is the invariant; keep it absolute. The native app collects nothing at all (see `PrivacyInfo.xcprivacy`). The **web PWA** carries one outbound host as of 2026-07-28: Plausible analytics — cookieless, no personal data, no cross-site tracking — allowed explicitly in `web/netlify.toml`'s CSP under both `script-src` and `connect-src`. It is deliberate, not drift; **do not "fix" the CSP by removing it.** Since 2026-08-17 it carries named interaction events too (`web/analytics.js`), under a rule that keeps the invariant absolute: **events name which control was used, never what was entered** — no reading, note, coordinate or count of observations is ever a prop, and the smoke test asserts it. Full taxonomy and constraints in `docs/ANALYTICS.md`. Beyond that one host, don't add network dependencies, and never route anything a user typed through one.
 - Follows the workspace **Project Conventions** in `../CLAUDE.md` (plan before multi-step work; verification is the last step; reciprocal cross-referencing). Session work is logged to the PKM `SESSION_LOG.md` via the session-log skill, not a repo-local log.
 
 ## Map of the repo
@@ -95,11 +95,12 @@ The `web/` app has **no build step** and no dependencies — it's static files s
 | `Sources/PlateworksCore/` | pure calculation core (source of truth) |
 | `Sources/PlateworksVectors/` | `swift run plateworks-vectors` — emits conformance vectors |
 | `App/PlateworksIgnition/` | SwiftUI app (iOS/macOS) + its test targets |
-| `web/` | offline PWA (engine.js, app.js, index.html, sw.js, manifest, netlify.toml) |
+| `web/` | offline PWA (engine.js, app.js, analytics.js, index.html, sw.js, manifest, netlify.toml) |
 | `conformance/` | golden vectors + Node parity harness |
 | `PROJECT_CHARTER.md` | vision, status, milestones |
 | `DESIGN.md` | design system |
 | `docs/PARITY.md`, `docs/DATA_PROVENANCE.md`, `docs/APP_STORE.md` | parity machinery, table provenance, store listing draft |
+| `docs/ANALYTICS.md` | what the web PWA reports to Plausible, and the rule that keeps readings out of it |
 | `docs/UX_TWO_TAB.md`, `docs/PLAN_TWO_TAB.md` | the two-tab restructure — design record and its implementation plan |
 | `docs/RED_TEAM.md` | red-team findings, what's fixed vs. recommended, iOS capability roadmap |
 | `docs/IMPLEMENTATION_PLAN.md` | sequenced plan for the red-team recommendations + iOS capabilities (dependencies, verification, cloud-vs-Mac split) |

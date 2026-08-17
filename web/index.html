@@ -234,6 +234,9 @@
 </div>
 <script src="/engine.js"></script>
 <script src="/app.js"></script>
+<!-- Interaction events for the analytics tag above. Loaded last and strictly
+     observational: it listens, it never calls into the app. See analytics.js. -->
+<script src="/analytics.js"></script>
 <script>
 // Register the service worker for offline use (a fireline has no signal).
 if ("serviceWorker" in navigator) {
